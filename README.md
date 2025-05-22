@@ -2,6 +2,62 @@
 
 A user-friendly and responsive Flask-based banking application designed for deployment on PythonAnywhere. This application allows users to create accounts, perform simulated money transfers between accounts, view transaction history, and securely manage their credentials.
 
+## GROUP MEMBERS: aBitLock Bros
+- **Bata, Gian Carlo**
+- **Tagum, Leo**
+- **Papa, Nikko**
+- **Calingacion, Almira**
+
+## Security Enhancements & Assessment Scripts (2025)
+
+This project has been significantly enhanced for security and includes automated security assessment scripts. Key improvements and additions:
+
+### Security Enhancements
+- **Strong Password Policy**: Enforced minimum 8 characters, with upper/lowercase, number, and special character requirements.
+- **Password Hashing**: All passwords are hashed using bcrypt.
+- **Session Management**: Secure session cookie flags (`Secure`, `HttpOnly`, `SameSite`), session timeout, and session fixation prevention.
+- **CSRF Protection**: All forms use CSRF tokens; custom error handler for CSRF errors.
+- **Rate Limiting**: Strict per-IP and per-user rate limits on sensitive endpoints (login, register, transfer, admin/manager APIs), with logging and custom error pages.
+- **HTTPS Enforcement**: HTTP requests are redirected to HTTPS in production.
+- **Error Handling**: Generic error handlers for 400, 403, 404, 500, and CSRF errors; user-friendly error pages.
+- **Output Encoding**: Jinja2 auto-escaping enforced; guidance to avoid `|safe` unless trusted.
+- **Secure Data Storage**: All secrets/credentials loaded from environment variables; never logged or exposed.
+- **Audit Logging**: Sensitive changes (e.g., user edits) are logged as transactions for auditability.
+- **Clickjacking Protection**: (Recommended) Set `X-Frame-Options` or `Content-Security-Policy` headers.
+
+### Automated Security Assessment Scripts
+The following scripts are included for ongoing security testing:
+
+- `security_auth_test.py`: Tests for weak passwords, password cracking, and authentication bypass.
+- `session_management_test.py`: Tests for session fixation and session hijacking vulnerabilities.
+- `data_network_security_test.py`: Checks for secure data storage (no secrets in code, password hashing) and HTTPS enforcement.
+- `input_validation_test.py`: Tests for SQL injection, XSS, and command injection vulnerabilities.
+- `authorization_test.py`: Tests for improper access control (privilege escalation).
+- `misc_security_tests.py`: Tests for CSRF, clickjacking, and known vulnerabilities in dependencies (via `pip-audit`).
+- `zap_scan.py`: Example script for running an automated scan with OWASP ZAP (requires ZAP setup).
+
+> **Note:** These scripts are for authorized security testing only. Review and update credentials/URLs as needed for your environment.
+
+### How to Use Security Scripts
+1. Ensure your Flask app is running locally (`python app.py`).
+2. Run each script individually, e.g.:
+   ```
+   python security_auth_test.py
+   python session_management_test.py
+   python data_network_security_test.py
+   python input_validation_test.py
+   python authorization_test.py
+   python misc_security_tests.py
+   python zap_scan.py
+   ```
+3. Review the output for any warnings or vulnerabilities.
+
+### Recommendations
+- Regularly run the included security scripts, especially after code or dependency updates.
+- Use HTTPS in all environments.
+- Set strong, unique credentials for all admin/manager accounts.
+- Review and update rate limits and security policies as needed for your deployment.
+
 ## Features
 
 - **User Authentication**
@@ -108,6 +164,7 @@ A user-friendly and responsive Flask-based banking application designed for depl
    # Then configure your local repository
    git remote remove origin
    git remote add origin https://github.com/yourusername/simple-banking-app-v2.git
+   git remote set-url origin https://yourusername@github.com/yourusername/simple-banking-app-v2.git
    git branch -M main
    git push -u origin main
    
@@ -268,6 +325,8 @@ By default, the rate limiting data is stored in memory. For production use, it's
 
 If Redis is not available, the application will automatically fall back to in-memory storage.
 
+## Contributing
+Guidelines for contributing to the project.
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.

@@ -11,17 +11,61 @@
     <style>
         body {
             padding-top: 60px;
-            background-color: #f8f9fa;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
+            /* Gradient background for the whole app */
+            background: linear-gradient(135deg, #e0e7ff 0%, #f8fafc 50%, #c7d2fe 100%);
+        }
+        .navbar {
+            background: linear-gradient(90deg, #6366f1 0%, #4f46e5 100%) !important;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+        .footer {
+            background: linear-gradient(90deg, #6366f1 0%, #4f46e5 100%);
+            color: white;
+            box-shadow: 0 -2px 8px rgba(0,0,0,0.04);
+        }
+        .card {
+            background: linear-gradient(135deg, #f1f5f9 0%, #e0e7ff 100%);
+            box-shadow: 0 4px 12px rgba(99,102,241,0.08);
+        }
+        .card-header {
+            /* background: linear-gradient(90deg, #6366f1 0%, #818cf8 100%); */
+            color: white;
+        }
+        .btn-primary, .btn-success, .btn-warning, .btn-danger {
+            box-shadow: 0 2px 4px rgba(99,102,241,0.08);
+            border: none;
+        }
+        .btn-primary {
+            background: linear-gradient(90deg, #6366f1 0%, #818cf8 100%);
+        }
+        .btn-success {
+            background: linear-gradient(90deg, #22d3ee 0%, #38bdf8 100%);
+        }
+        .btn-warning {
+            background: linear-gradient(90deg, #fbbf24 0%, #f59e42 100%);
+        }
+        .btn-danger {
+            background: linear-gradient(90deg, #ef4444 0%, #f87171 100%);
+        }
+        .balance-card {
+            background: linear-gradient(135deg, #6366f1 0%, #818cf8 100%) !important;
+            color: white;
+        }
+        .alert-info {
+            background: linear-gradient(90deg, #e0e7ff 0%, #f1f5f9 100%);
+            color: #374151;
+        }
+        .section-title {
+            margin-top: 2rem;
+            margin-bottom: 1.5rem;
+            font-weight: 600;
+            color: #000000;
         }
         .navbar-brand {
             font-weight: bold;
-        }
-        .card {
-            margin-bottom: 20px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
         .transaction-item {
             border-left: 4px solid #dee2e6;
@@ -35,10 +79,6 @@
         .transaction-item.received {
             border-left-color: #28a745;
         }
-        .balance-card {
-            background: linear-gradient(135deg, #007bff, #6610f2);
-            color: white;
-        }
         .flash-messages {
             margin-top: 10px;
         }
@@ -51,30 +91,46 @@
         .content {
             flex: 1 0 auto;
         }
-        .footer {
-            flex-shrink: 0;
-            background-color: #343a40;
-            color: white;
-            padding: 25px 0;
-            margin-top: 50px;
-        }
         .footer a {
-            color: #007bff;
+            font-weight: bold;
+            color: #11063a;
             text-decoration: none;
+            transition: color 0.3s;
+            padding-top: 2px;
         }
         .footer a:hover {
-            color: #0056b3;
+            color: #e9e9e9;
             text-decoration: underline;
+        }
+        .footer h5 {
+            font-weight: bold;
+            padding-top: 15px;
+        }
+        .footer h6 {
+            font-size: 0.9rem;
+            color: #f8fafc;
+        }
+        .footer p {
+            font-size: 0.9rem;
+            color: #f8fafc;
         }
         .social-icons {
             font-size: 1.5rem;
+        }
+        .row {
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+
         }
         .social-icons a {
             margin: 0 10px;
             color: white;
         }
         .social-icons a:hover {
-            color: #007bff;
+            color: #000000;
+        }
+        .bg-primary {
+            background-color: none !important;
         }
     </style>
 </head>
@@ -211,7 +267,14 @@
             <hr class="mt-4 mb-4">
             <div class="row">
                 <div class="col-md-6 mb-3 mb-md-0">
-                    <p class="mb-0">&copy; {{ current_year }} SimpleBankApp. All rights reserved. Developed by <a href="https://github.com/lanlanjr" target="_blank">A.IBO.JR.</a></p>
+                    <p class="mb-0">&copy; {{ current_year }} SimpleBankApp. All rights reserved. Developed by <a href="https://github.com/" target="_blank">A.IBO.JR.</a></p>
+                    <div class="mt-1">
+                        <p class="mb-1">Security Enhanced by <a target="_blank">aBitLock Bros.</a></p>
+                        <a href="https://github.com/NebularEclipse" target="_blank" class="me-1 text-decoration-none" style="background:none;">Bata, Gian</a>
+                        <a href="https://github.com/Suzeen" target="_blank" class="me-1 text-decoration-none" style="background:none;">Tagum, Leo</a>
+                        <a href="https://github.com/nikkopapa" target="_blank" class="me-1 text-decoration-none" style="background:none;">Papa, Nikko</a>
+                        <a href="https://github.com/Almira2303" target="_blank" class="text-decoration-none" style="background:none;">Calingacio, Almira</a>
+                    </div>
                 </div>
                 <div class="col-md-6 text-md-end">
                     <p class="mb-0">
@@ -228,4 +291,4 @@
     
     {% block scripts %}{% endblock %}
 </body>
-</html> 
+</html>
