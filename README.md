@@ -2,6 +2,14 @@
 
 A user-friendly and responsive Flask-based banking application designed for deployment on PythonAnywhere. This application allows users to create accounts, perform simulated money transfers between accounts, view transaction history, and securely manage their credentials.
 
+## New Security Features & Enhancements (2025)
+- **6-digit PIN verification** required for all account access (user, admin, manager)
+- **PIN creation and reset**: Users must create a 6-digit PIN; can reset PIN after password confirmation
+- **PIN lockout**: After 3 incorrect PIN attempts, user is prompted to reset PIN
+- **Automatic logout** after 15 minutes of inactivity (session timeout)
+- **Inactivity warning modal**: User is warned 1 minute before auto-logout
+- **All PINs securely hashed** in the database
+
 ## Team Members
 - **Bata, Gian Carlo**
 - **Papa, Nikko**

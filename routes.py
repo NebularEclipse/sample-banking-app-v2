@@ -1,10 +1,10 @@
-from flask import render_template, redirect, url_for, flash, request, jsonify
+from flask import render_template, redirect, url_for, flash, request, jsonify, session
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.urls import url_parse
 from app import app  # Only import app here
 from flask_wtf.csrf import CSRFError
 from extensions import db, limiter
-from forms import LoginForm, RegistrationForm, TransferForm, ResetPasswordRequestForm, ResetPasswordForm, DepositForm, UserEditForm, ConfirmTransferForm
+from forms import LoginForm, RegistrationForm, TransferForm, ResetPasswordRequestForm, ResetPasswordForm, DepositForm, UserEditForm, ConfirmTransferForm, PinForm, CreatePinForm
 from models import User, Transaction
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired
 import os
@@ -128,10 +128,13 @@ def login():
             
         from app import secure_login_user
         secure_login_user(user)
+        session.permanent = True  # Enable session timeout for inactivity
         next_page = request.args.get('next')
         if not next_page or url_parse(next_page).netloc != '':
             next_page = url_for('index')
         return redirect(next_page)
+        # After successful login, redirect to welcome page
+        return redirect(url_for('welcome'))
     return render_template('login.html', title='Sign In', form=form)
 
 @app.route('/logout')
@@ -159,6 +162,81 @@ def register():
         return redirect(url_for('login'))
     return render_template('register.html', title='Register', form=form)
 
+@app.route('/account/pin', methods=['GET', 'POST'])
+@login_required
+def account_pin():
+    if not current_user.pin_hash:
+        return redirect(url_for('create_pin'))
+    form = PinForm()
+    # Track failed attempts in session
+    if 'pin_attempts' not in session:
+        session['pin_attempts'] = 0
+    show_reset = False
+    if form.validate_on_submit():
+        if current_user.check_pin(form.pin.data):
+            session['pin_verified'] = True
+            session['pin_attempts'] = 0  # Reset on success
+            return redirect(url_for('account'))
+        else:
+            session['pin_attempts'] += 1
+            if session['pin_attempts'] >= 3:
+                show_reset = True
+                flash('You have entered an incorrect PIN three times. Please reset your PIN.')
+            else:
+                flash('Incorrect PIN. Please try again.')
+    return render_template('pin_verify.html', form=form, title='Enter PIN', show_reset=show_reset)
+
+@app.route('/account/create_pin', methods=['GET', 'POST'])
+@login_required
+def create_pin():
+    if current_user.pin_hash:
+        return redirect(url_for('account_pin'))
+    form = CreatePinForm()
+    if form.validate_on_submit():
+        current_user.set_pin(form.pin.data)
+        db.session.commit()
+        session['pin_verified'] = True
+        flash('PIN set successfully!')
+        return redirect(url_for('account'))
+    return render_template('pin_create.html', form=form, title='Create PIN')
+
+@app.route('/account/reset_pin', methods=['GET', 'POST'])
+@login_required
+def reset_pin():
+    from forms import ResetPinForm
+    form = ResetPinForm()
+    if form.validate_on_submit():
+        user = current_user
+        # Confirm password
+        if not user.check_password(form.password.data):
+            form.password.errors.append('Incorrect password.')
+            return render_template('pin_reset.html', form=form)
+        # Set new PIN
+        user.set_pin(form.pin.data)
+        db.session.commit()
+        flash('Your PIN has been reset successfully.')
+        return redirect(url_for('account'))
+    return render_template('pin_reset.html', form=form)
+
+@app.route('/reset_pin', methods=['GET', 'POST'])
+@login_required
+def reset_pin_global():
+    from forms import ResetPinForm
+    form = ResetPinForm()
+    if form.validate_on_submit():
+        user = current_user
+        # Confirm password
+        if not user.check_password(form.password.data):
+            form.password.errors.append('Incorrect password.')
+            return render_template('pin_reset.html', form=form)
+        # Set new PIN
+        user.set_pin(form.pin.data)
+        db.session.commit()
+        flash('Your PIN has been reset successfully.')
+        return redirect(url_for('account'))
+    return render_template('pin_reset.html', form=form)
+
+# Update /account route to require PIN verification
 @app.route('/account')
 @login_required
 def account():
@@ -166,6 +244,10 @@ def account():
         flash('Your account is awaiting approval from an administrator.')
         logout_user()
         return redirect(url_for('login'))
+    if not current_user.pin_hash:
+        return redirect(url_for('create_pin'))
+    if not session.get('pin_verified'):
+        return redirect(url_for('account_pin'))
     transactions = current_user.get_recent_transactions()
     return render_template('account.html', title='Account', transactions=transactions)
 
@@ -1028,3 +1110,16 @@ def internal_error(e):
 @app.errorhandler(CSRFError)
 def handle_csrf_error(e):
     return render_template('error.html', title='CSRF Error', message='The form you submitted is invalid or has expired. Please try again.'), 400
+
+@app.route('/welcome')
+@login_required
+def welcome():
+    return render_template('welcome.html', user=current_user)
+
+@app.route('/privacy-policy')
+def privacy_policy():
+    return render_template('privacy-policy.html', title='Privacy Policy')
+
+@app.route('/terms-of-service')
+def terms_of_service():
+    return render_template('terms-of-service.html', title='Terms of Service')

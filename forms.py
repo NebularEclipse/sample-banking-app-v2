@@ -156,4 +156,53 @@ class ConfirmTransferForm(FlaskForm):
     recipient_account = HiddenField('Recipient Account Number')
     amount = HiddenField('Amount')
     transfer_type = HiddenField('Transfer Type')
-    submit = SubmitField('Confirm Transfer') 
+    submit = SubmitField('Confirm Transfer')
+
+class PinForm(FlaskForm):
+    pin = PasswordField('6-digit PIN', validators=[DataRequired()])
+    submit = SubmitField('Verify PIN')
+
+    def validate_pin(self, pin):
+        if not pin.data.isdigit():
+            raise ValidationError('PIN must contain only numbers.')
+        if len(pin.data) != 6:
+            raise ValidationError('PIN must be exactly 6 digits.')
+
+class CreatePinForm(FlaskForm):
+    pin = PasswordField('Create 6-digit PIN', validators=[DataRequired()])
+    pin2 = PasswordField('Repeat PIN', validators=[DataRequired(), EqualTo('pin', message='PINs must match')])
+    submit = SubmitField('Set PIN')
+
+    def validate_pin(self, pin):
+        if not pin.data.isdigit():
+            raise ValidationError('PIN must contain only numbers.')
+        if len(pin.data) != 6:
+            raise ValidationError('PIN must be exactly 6 digits.')
+
+    def validate(self, extra_validators=None):
+        if not super(CreatePinForm, self).validate():
+            return False
+        if self.pin.data != self.pin2.data:
+            self.pin2.errors.append('PINs must match.')
+            return False
+        return True
+
+class ResetPinForm(FlaskForm):
+    password = PasswordField('Current Password', validators=[DataRequired()])
+    pin = PasswordField('New 6-digit PIN', validators=[DataRequired()])
+    pin2 = PasswordField('Repeat New PIN', validators=[DataRequired(), EqualTo('pin', message='PINs must match')])
+    submit = SubmitField('Reset PIN')
+
+    def validate_pin(self, pin):
+        if not pin.data.isdigit():
+            raise ValidationError('PIN must contain only numbers.')
+        if len(pin.data) != 6:
+            raise ValidationError('PIN must be exactly 6 digits.')
+
+    def validate(self, extra_validators=None):
+        if not super(ResetPinForm, self).validate():
+            return False
+        if self.pin.data != self.pin2.data:
+            self.pin2.errors.append('PINs must match.')
+            return False
+        return True

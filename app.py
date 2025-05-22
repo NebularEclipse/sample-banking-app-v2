@@ -55,7 +55,8 @@ def create_app():
     app.config['SESSION_COOKIE_SECURE'] = True  # Only send cookies over HTTPS
     app.config['SESSION_COOKIE_HTTPONLY'] = True  # Prevent JavaScript access to cookies
     app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'  # Mitigate CSRF
-    app.config['PERMANENT_SESSION_LIFETIME'] = datetime.timedelta(minutes=30)  # Session timeout
+    app.config['PERMANENT_SESSION_LIFETIME'] = datetime.timedelta(minutes=15)  # 15 minutes of inactivity
+    app.config['SESSION_PERMANENT'] = True  # Enable permanent sessions for automatic logout after inactivity
 
     # Initialize extensions with app
     db.init_app(app)
