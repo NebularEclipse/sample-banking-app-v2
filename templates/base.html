@@ -14,6 +14,55 @@
             min-height: 100vh;
             display: flex;
             flex-direction: column;
+            /* Gradient background for the whole app */
+            background: linear-gradient(135deg, #e0e7ff 0%, #f8fafc 50%, #c7d2fe 100%);
+        }
+        .navbar {
+            background: linear-gradient(90deg, #6366f1 0%, #4f46e5 100%) !important;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+        .footer {
+            background: linear-gradient(90deg, #6366f1 0%, #4f46e5 100%);
+            color: white;
+            box-shadow: 0 -2px 8px rgba(0,0,0,0.04);
+        }
+        .card {
+            background: linear-gradient(135deg, #f1f5f9 0%, #e0e7ff 100%);
+            box-shadow: 0 4px 12px rgba(99,102,241,0.08);
+        }
+        .card-header {
+            background: linear-gradient(90deg, #6366f1 0%, #818cf8 100%);
+            color: white;
+        }
+        .btn-primary, .btn-success, .btn-warning, .btn-danger {
+            box-shadow: 0 2px 4px rgba(99,102,241,0.08);
+            border: none;
+        }
+        .btn-primary {
+            background: linear-gradient(90deg, #6366f1 0%, #818cf8 100%);
+        }
+        .btn-success {
+            background: linear-gradient(90deg, #22d3ee 0%, #38bdf8 100%);
+        }
+        .btn-warning {
+            background: linear-gradient(90deg, #fbbf24 0%, #f59e42 100%);
+        }
+        .btn-danger {
+            background: linear-gradient(90deg, #ef4444 0%, #f87171 100%);
+        }
+        .balance-card {
+            background: linear-gradient(135deg, #6366f1 0%, #818cf8 100%) !important;
+            color: white;
+        }
+        .alert-info {
+            background: linear-gradient(90deg, #e0e7ff 0%, #f1f5f9 100%);
+            color: #374151;
+        }
+        .section-title {
+            margin-top: 2rem;
+            margin-bottom: 1.5rem;
+            font-weight: 600;
+            color: #000000;
         }
         .navbar-brand {
             font-weight: bold;
@@ -260,7 +309,8 @@
             <hr class="mt-4 mb-4">
             <div class="row">
                 <div class="col-md-6 mb-3 mb-md-0">
-                    <p class="mb-0">&copy; {{ current_year }} SimpleBankApp. All rights reserved. Developed by <a href="https://github.com/lanlanjr" target="_blank">A.IBO.JR.</a></p>
+                    <p class="mb-0">&copy; {{ current_year }} BPTC Banking. All rights reserved. Developed by</p>
+                    <p class="mb-0"><a href="https://github.com/" target="_blank">G.C.BATA, L.J.TAGUM, N.PAPA, A.CALINGACION</a></p>
                 </div>
                 <div class="col-md-6 text-md-end">
                     <p class="mb-0">
