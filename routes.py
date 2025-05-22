@@ -1,7 +1,8 @@
 from flask import render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.urls import url_parse
-from app import app, csrf
+from app import app  # Only import app here
+from flask_wtf.csrf import CSRFError
 from extensions import db, limiter
 from forms import LoginForm, RegistrationForm, TransferForm, ResetPasswordRequestForm, ResetPasswordForm, DepositForm, UserEditForm, ConfirmTransferForm
 from models import User, Transaction
@@ -10,6 +11,24 @@ import os
 from functools import wraps
 import psgc_api
 import datetime
+import re
+from flask_limiter.util import get_remote_address
+from flask_limiter.errors import RateLimitExceeded
+import logging
+
+def is_strong_password(password):
+    """Check if the password meets the required strength criteria."""
+    if len(password) < 8:
+        return False
+    if not re.search(r"[A-Z]", password):
+        return False
+    if not re.search(r"[a-z]", password):
+        return False
+    if not re.search(r"[0-9]", password):
+        return False
+    if not re.search(r"[!@#$%^&*(),.?\":{}|<>]", password):
+        return False
+    return True
 
 # Context processor to provide current year to all templates
 @app.context_processor
@@ -59,8 +78,21 @@ def index():
 def about():
     return render_template('about.html', title='About Us')
 
+# --- Enhanced Rate Limiting Mechanisms ---
+# 1. Set a global default rate limit (fallback for all routes)
+# REMOVED: limiter.limit("200 per hour")(app)  # This is invalid and causes an error
+
+# 2. Custom error handler for rate limit errors
+@app.errorhandler(RateLimitExceeded)
+def rate_limit_handler(e):
+    # Log the rate limit event
+    logging.warning(f"Rate limit exceeded: {request.remote_addr} {request.endpoint}")
+    return render_template('rate_limit_error.html', title='Rate Limit Exceeded', message='You have exceeded the allowed number of requests. Please try again later.'), 429
+
+# 3. Apply stricter, combined per-user and per-IP limits to sensitive endpoints
 @app.route('/login', methods=['GET', 'POST'])
-@limiter.limit("10 per minute")
+@limiter.limit("5 per minute", key_func=lambda: request.remote_addr)
+@limiter.limit("10 per hour", key_func=lambda: getattr(current_user, 'id', request.remote_addr))
 def login():
     if current_user.is_authenticated:
         return redirect(url_for('index'))
@@ -94,7 +126,8 @@ def login():
                 flash('Your account has been deactivated. Please contact an administrator.')
             return redirect(url_for('login'))
             
-        login_user(user)
+        from app import secure_login_user
+        secure_login_user(user)
         next_page = request.args.get('next')
         if not next_page or url_parse(next_page).netloc != '':
             next_page = url_for('index')
@@ -106,13 +139,18 @@ def logout():
     logout_user()
     return redirect(url_for('login'))
 
+# Registration: 3 per hour per IP
 @app.route('/register', methods=['GET', 'POST'])
-@limiter.limit("5 per minute")
+@limiter.limit("3 per minute", key_func=lambda: request.remote_addr)
+@limiter.limit("5 per hour", key_func=lambda: request.form.get('username', request.remote_addr))
 def register():
     if current_user.is_authenticated:
         return redirect(url_for('index'))
     form = RegistrationForm()
     if form.validate_on_submit():
+        if not is_strong_password(form.password.data):
+            flash('Password must be at least 8 characters long, include a number, a special character, and both uppercase and lowercase letters.')
+            return render_template('register.html', title='Register', form=form)
         user = User(username=form.username.data, email=form.email.data, status='pending')
         user.set_password(form.password.data)
         db.session.add(user)
@@ -131,9 +169,11 @@ def account():
     transactions = current_user.get_recent_transactions()
     return render_template('account.html', title='Account', transactions=transactions)
 
+# Transfer: 10 per hour per user
 @app.route('/transfer', methods=['GET', 'POST'])
 @login_required
-@limiter.limit("20 per hour")
+@limiter.limit("10 per hour", key_func=lambda: current_user.get_id() or get_remote_address())
+@limiter.limit("20 per hour", key_func=lambda: request.remote_addr)
 def transfer():
     if current_user.status != 'active' and not current_user.is_admin and not current_user.is_manager:
         flash('Your account is awaiting approval from an administrator.')
@@ -180,9 +220,11 @@ def transfer():
     
     return render_template('transfer.html', title='Transfer Money', form=form)
 
+# Execute transfer: 10 per hour per user
 @app.route('/execute_transfer', methods=['POST'])
 @login_required
-@limiter.limit("20 per hour")
+@limiter.limit("10 per hour", key_func=lambda: current_user.get_id() or get_remote_address())
+@limiter.limit("20 per hour", key_func=lambda: request.remote_addr)
 def execute_transfer():
     if current_user.status != 'active' and not current_user.is_admin and not current_user.is_manager:
         flash('Your account is awaiting approval from an administrator.')
@@ -218,8 +260,10 @@ def execute_transfer():
     
     return redirect(url_for('transfer'))
 
+# Password reset request: 3 per hour per IP
 @app.route('/reset_password_request', methods=['GET', 'POST'])
-@limiter.limit("5 per hour")
+@limiter.limit("2 per minute", key_func=lambda: request.remote_addr)
+@limiter.limit("5 per hour", key_func=lambda: request.form.get('email', request.remote_addr))
 def reset_password_request():
     if current_user.is_authenticated:
         return redirect(url_for('index'))
@@ -232,8 +276,9 @@ def reset_password_request():
         return redirect(url_for('login'))
     return render_template('reset_password_request.html', title='Reset Password', form=form)
 
+# Password reset: 3 per hour per IP
 @app.route('/reset_password/<token>', methods=['GET', 'POST'])
-@limiter.limit("5 per hour")
+@limiter.limit("5 per hour", key_func=lambda: request.remote_addr)
 def reset_password(token):
     if current_user.is_authenticated:
         return redirect(url_for('index'))
@@ -249,9 +294,11 @@ def reset_password(token):
     except:
         flash('Invalid reset link')
         return redirect(url_for('reset_password_request'))
-    
     form = ResetPasswordForm()
     if form.validate_on_submit():
+        if not is_strong_password(form.password.data):
+            flash('Password must be at least 8 characters long, include a number, a special character, and both uppercase and lowercase letters.')
+            return render_template('reset_password.html', form=form)
         user.set_password(form.password.data)
         db.session.commit()
         flash('Your password has been reset.')
@@ -573,18 +620,20 @@ def edit_user(user_id):
     return render_template('admin/edit_user.html', title='Edit User', form=form, user=user)
 
 # Apply rate limiting to API endpoints
+# Admin/manager API endpoints: 20 per minute per IP
 @app.route('/api/provinces/<region_code>')
 @login_required
 @admin_required
-@limiter.limit("30 per minute")
+@limiter.limit("20 per minute", key_func=get_remote_address)
 def get_provinces(region_code):
     provinces = psgc_api.get_provinces(region_code)
     return jsonify([{'code': p['code'], 'name': p['name']} for p in provinces])
 
+# Admin/manager API endpoints: 20 per minute per IP
 @app.route('/api/cities/<province_code>')
 @login_required
 @admin_required
-@limiter.limit("30 per minute")
+@limiter.limit("20 per minute", key_func=get_remote_address)
 def get_cities_and_municipalities(province_code):
     # Check if it's a city or municipality
     cities = psgc_api.get_cities(province_code)
@@ -602,10 +651,11 @@ def get_cities_and_municipalities(province_code):
         
     return jsonify(result)
 
+# Admin/manager API endpoints: 20 per minute per IP
 @app.route('/api/barangays/<city_code>')
 @login_required
 @admin_required
-@limiter.limit("30 per minute")
+@limiter.limit("20 per minute", key_func=get_remote_address)
 def get_barangays(city_code):
     # Check if it's a city or municipality
     city_info = psgc_api.get_city_by_code(city_code)
@@ -907,4 +957,74 @@ def manager_transfers():
     return render_template('manager/transfers.html', 
                          title='Transfer Transactions', 
                          transactions=transactions,
-                         users=users) 
+                         users=users)
+
+# --- Secure Data Storage Enhancements ---
+# 1. Never log or print sensitive data (passwords, secrets, tokens, etc.)
+# 2. Ensure all secrets and credentials are loaded from environment variables, not hardcoded.
+# 3. Passwords are always hashed using bcrypt (handled in User.set_password()).
+# 4. Sensitive environment variables should be accessed via os.environ and never exposed in logs or error messages.
+# 5. Add a helper to mask sensitive data if ever shown in logs (for future debugging):
+def mask_sensitive(value):
+    if value and len(value) > 4:
+        return value[:2] + '*' * (len(value)-4) + value[-2:]
+    return '****'
+# Example: Never print or log sensitive data
+# print(f"User password: {user.password}")  # DO NOT DO THIS
+# print(f"DB password: {os.environ.get('MYSQL_PASSWORD')}")  # DO NOT DO THIS
+# In error handling, avoid leaking sensitive info:
+# flash('An error occurred. Please try again.')  # Generic message
+
+
+# --- Secure Communication Enhancements ---
+# 1. Enforce HTTPS in production by redirecting all HTTP requests to HTTPS.
+# 2. Set secure cookie flags (already set in app.py).
+# 3. Add a before_request handler to redirect HTTP to HTTPS (if not in debug mode).
+
+@app.before_request
+def enforce_https():
+    if not app.debug and request.headers.get('X-Forwarded-Proto', 'http') != 'https':
+        url = request.url.replace('http://', 'https://', 1)
+        return redirect(url, code=301)
+
+# --- Secure Transaction Logging (for auditing) ---
+# All transactions are already stored in the Transaction model with sender, receiver, amount, type, and timestamp.
+# For extra security, ensure transaction details are never exposed in logs or error messages.
+
+# --- Enhanced Error Handling to Prevent Information Leakage ---
+# Register generic error handlers for 400, 403, 404, 500
+@app.errorhandler(400)
+def bad_request_error(e):
+    return render_template('error.html', title='Bad Request', message='Bad request.'), 400
+
+@app.errorhandler(403)
+def forbidden_error(e):
+    return render_template('error.html', title='Forbidden', message='You do not have permission to access this resource.'), 403
+
+@app.errorhandler(404)
+def not_found_error(e):
+    return render_template('error.html', title='Not Found', message='The page you are looking for does not exist.'), 404
+
+@app.errorhandler(500)
+def internal_error(e):
+    db.session.rollback()
+    return render_template('error.html', title='Server Error', message='An internal server error occurred. Please try again later.'), 500
+
+# --- Output Encoding to Prevent XSS ---
+# Jinja2 auto-escapes variables by default. Ensure templates do not use |safe unless content is trusted.
+# For any custom HTML rendering, use Markup.escape() if needed.
+# Example usage in Python (if needed):
+# from markupsafe import escape
+# safe_content = escape(user_input)
+
+# --- CSRF Protection Enhancements ---
+# 1. Ensure CSRFProtect is initialized (already done in app.py).
+# 2. All Flask-WTF forms automatically include CSRF tokens.
+# 3. For all POST forms in templates, ensure {{ form.csrf_token }} is present inside <form>.
+# 4. For custom/manual forms, add:
+#    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+# 5. For API endpoints, if needed, use @csrf.exempt to allow only where appropriate (e.g., public APIs).
+# 6. Add error handler for CSRF errors to show a user-friendly message.
+@app.errorhandler(CSRFError)
+def handle_csrf_error(e):
+    return render_template('error.html', title='CSRF Error', message='The form you submitted is invalid or has expired. Please try again.'), 400

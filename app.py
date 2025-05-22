@@ -1,6 +1,6 @@
 import os
 from flask import Flask, render_template, redirect, url_for, flash, request, jsonify
-from flask_login import current_user, login_user, logout_user, login_required
+from flask_login import current_user, login_user as flask_login_user, logout_user, login_required
 from werkzeug.security import generate_password_hash, check_password_hash
 import datetime
 from dotenv import load_dotenv
@@ -52,6 +52,10 @@ def create_app():
     app.config['SQLALCHEMY_DATABASE_URI'] = db_uri
 
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    app.config['SESSION_COOKIE_SECURE'] = True  # Only send cookies over HTTPS
+    app.config['SESSION_COOKIE_HTTPONLY'] = True  # Prevent JavaScript access to cookies
+    app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'  # Mitigate CSRF
+    app.config['PERMANENT_SESSION_LIFETIME'] = datetime.timedelta(minutes=30)  # Session timeout
 
     # Initialize extensions with app
     db.init_app(app)
@@ -83,6 +87,12 @@ def load_user(user_id):
 # Import routes after app creation
 from routes import *
 
+def secure_login_user(user, **kwargs):
+    """Log in user and regenerate session to prevent fixation."""
+    from flask import session
+    session.clear()  # Clear session to prevent fixation
+    flask_login_user(user, **kwargs)
+
 # Database initialization function
 def init_db():
     """Initialize the database with required tables and default admin user."""
@@ -113,4 +123,4 @@ if __name__ == '__main__':
     
     with app.app_context():
         db.create_all()
-    app.run(debug=True) 
+    app.run(debug=True)

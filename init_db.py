@@ -20,7 +20,11 @@ def init_mysql_database():
     mysql_database = os.environ.get('MYSQL_DATABASE')
     
     # Convert port to string to avoid type issues
-    mysql_port = str(mysql_port)
+    mysql_port = os.getenv("MYSQL_PORT")
+    if mysql_port is not None:
+        mysql_port = int(mysql_port)
+    else:
+        mysql_port = 3306
     
     # Try to connect to MySQL server without database (to create it if needed)
     try:
