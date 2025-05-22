@@ -2,46 +2,6 @@
 
 A user-friendly and responsive Flask-based banking application designed for deployment on PythonAnywhere. This application allows users to create accounts, perform simulated money transfers between accounts, view transaction history, and securely manage their credentials.
 
-## Team Members
-- **Bata, Gian Carlo**
-- **Papa, Nikko**
-- **Tagum, Leo**
-- **Calingacion, Almira**
-
-## Security Enhancements (2025)
-- Strong password policy (min 8 chars, upper/lowercase, number, special char)
-- Passwords hashed with bcrypt
-- Secure session management (cookie flags, timeout, fixation prevention)
-- CSRF protection for all forms
-- Rate limiting on sensitive endpoints
-- HTTPS enforcement in production
-- Generic error handlers and user-friendly error pages
-- Jinja2 auto-escaping enforced
-- Secrets/credentials loaded from environment variables
-- Audit logging for sensitive changes
-- Clickjacking protection via headers
-
-## Automated Security Assessment Scripts
-- `security_auth_test.py`: Tests for weak passwords and authentication bypass
-- `session_management_test.py`: Session fixation/hijacking tests
-- `data_network_security_test.py`: Checks for secure storage and HTTPS
-- `input_validation_test.py`: SQLi, XSS, command injection tests
-- `authorization_test.py`: Access control tests
-- `misc_security_tests.py`: CSRF, clickjacking, dependency checks
-- `zap_scan.py`: Example OWASP ZAP scan script
-
-> **Note:** For authorized security testing only. Update credentials/URLs as needed.
-
-## How to Use Security Scripts
-1. Run your Flask app (`python app.py`)
-2. Run each script individually, e.g.:
-   ```
-   python security_auth_test.py
-   python session_management_test.py
-   # ...etc
-   ```
-3. Review output for warnings or vulnerabilities.
-
 ## Features
 - User authentication (login, register, password recovery)
 - Account management (balance, transaction history)
@@ -90,6 +50,7 @@ A user-friendly and responsive Flask-based banking application designed for depl
    # Set up your own repository
    git remote remove origin
    git remote add origin https://github.com/yourusername/simple-banking-app-v2.git
+   git remote set-url origin https://yourusername@github.com/yourusername/simple-banking-app-v2.git
    git branch -M main
    git push -u origin main
    # Replace 'yourusername' with your GitHub username
@@ -146,5 +107,9 @@ For production, use Redis for rate limit storage:
 REDIS_URL=redis://localhost:6379/0
 ```
 
+If Redis is not available, the application will automatically fall back to in-memory storage.
+
 ## License
 MIT License - see LICENSE file for details.
+
+This project is licensed under the MIT License - see the LICENSE file for details.
