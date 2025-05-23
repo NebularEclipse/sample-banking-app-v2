@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3>Transaction Summary for {{ user.username }}</h3>
+        <a href="{{ url_for('admin_export_user_transactions', user_id=user.id) }}" class="btn btn-outline-secondary">
+            <i class="bi bi-download"></i> Export Summary (CSV)
+        </a>
+    </div>
+    <div class="mb-2">
+        <strong>Account Number:</strong> {{ user.account_number }}<br>
+        <strong>Remaining Balance:</strong> ₱{{ "%.2f"|format(user.balance) }}
+    </div>
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Type</th>
+                    <th>Amount</th>
+                    <th>Sender</th>
+                    <th>Receiver</th>
+                    <th>Timestamp</th>
+                    <th>Details</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in transactions %}
+                <tr>
+                    <td>{{ t.id }}</td>
+                    <td>{{ t.transaction_type }}</td>
+                    <td>
+                      {% if t.amount is not none %}
+                        ₱{{ "%.2f"|format(t.amount) }}
+                      {% else %}
+                        N/A
+                      {% endif %}
+                    </td>
+                    <td>{{ t.sender.username if t.sender else 'N/A' }}</td>
+                    <td>{{ t.receiver.username if t.receiver else 'N/A' }}</td>
+                    <td>{{ t.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
+                    <td>{{ t.details or '' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if not transactions %}
+    <div class="text-center p-4">
+        <p class="text-muted">No transactions found for this user.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

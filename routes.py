@@ -701,6 +701,79 @@ def edit_user(user_id):
     
     return render_template('admin/edit_user.html', title='Edit User', form=form, user=user)
 
+@app.route('/admin/user/<int:user_id>/transactions')
+@login_required
+@admin_required
+def admin_user_transactions(user_id):
+    user = User.query.get_or_404(user_id)
+    transactions = Transaction.query.filter(
+        (Transaction.sender_id == user.id) | (Transaction.receiver_id == user.id)
+    ).order_by(Transaction.timestamp.desc()).all()
+    return render_template('admin/user_transactions.html', user=user, transactions=transactions)
+
+@app.route('/admin/user/<int:user_id>/export_transactions')
+@login_required
+@admin_required
+def admin_export_user_transactions(user_id):
+    import csv
+    from io import StringIO
+    user = User.query.get_or_404(user_id)
+    transactions = Transaction.query.filter(
+        (Transaction.sender_id == user.id) | (Transaction.receiver_id == user.id)
+    ).order_by(Transaction.timestamp.desc()).all()
+    si = StringIO()
+    writer = csv.writer(si)
+    writer.writerow(['Account Number', 'Username', 'Remaining Balance', 'Transaction ID', 'Type', 'Amount', 'Sender', 'Receiver', 'Timestamp', 'Details'])
+    for t in transactions:
+        sender = t.sender_id and User.query.get(t.sender_id).username or 'N/A'
+        receiver = t.receiver_id and User.query.get(t.receiver_id).username or 'N/A'
+        amount_str = f"₱{t.amount:.2f}" if t.amount is not None else 'N/A'
+        writer.writerow([
+            user.account_number,
+            user.username,
+            f"₱{user.balance:.2f}",
+            t.id,
+            t.transaction_type,
+            amount_str,
+            sender,
+            receiver,
+            t.timestamp.strftime('%Y-%m-%d %H:%M'),
+            t.details or ''
+        ])
+    output = si.getvalue()
+    si.close()
+    return (output, 200, {
+        'Content-Type': 'text/csv',
+        'Content-Disposition': f'attachment; filename={user.username}_transactions.csv'
+    })
+
+@app.route('/admin/export_users')
+@login_required
+@admin_required
+def export_users():
+    import csv
+    from io import StringIO
+    users = User.query.all()
+    si = StringIO()
+    writer = csv.writer(si)
+    writer.writerow(['Username', 'Email', 'Account Number', 'Role', 'Status', 'Balance', 'Date Registered'])
+    for user in users:
+        writer.writerow([
+            user.username,
+            user.email,
+            user.account_number,
+            'Admin' if user.is_admin else 'Manager' if user.is_manager else 'User',
+            user.status.title(),
+            f"₱{user.balance:.2f}" if user.balance is not None else 'N/A',
+            user.date_registered.strftime('%Y-%m-%d %H:%M')
+        ])
+    output = si.getvalue()
+    si.close()
+    return (output, 200, {
+        'Content-Type': 'text/csv',
+        'Content-Disposition': 'attachment; filename=users_export.csv'
+    })
+
 # Apply rate limiting to API endpoints
 # Admin/manager API endpoints: 20 per minute per IP
 @app.route('/api/provinces/<region_code>')

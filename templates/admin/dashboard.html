@@ -7,7 +7,8 @@
             <h2>Admin Dashboard</h2>
             <div>
                 <a href="{{ url_for('admin_deposit') }}" class="btn btn-success me-2">Deposit Funds</a>
-                <a href="{{ url_for('create_account') }}" class="btn btn-primary">Create New Account</a>
+                <a href="{{ url_for('create_account') }}" class="btn btn-primary me-2">Create New Account</a>
+                <a href="{{ url_for('export_users') }}" class="btn btn-outline-secondary">Export Users (CSV)</a>
             </div>
         </div>
         
@@ -54,7 +55,13 @@
                                     <span class="text-muted">Not provided</span>
                                     {% endif %}
                                 </td>
-                                <td>₱{{ "%.2f"|format(user.balance) }}</td>
+                                <td>
+                                    {% if user.balance is not none %}
+                                        ₱{{ "%.2f"|format(user.balance) }}
+                                    {% else %}
+                                        <span class="text-muted">N/A</span>
+                                    {% endif %}
+                                </td>
                                 <td>
                                     {% if user.status == 'active' %}
                                     <span class="badge bg-success">Active</span>
@@ -73,7 +80,8 @@
                                     {% else %}
                                     <a href="{{ url_for('activate_user', user_id=user.id) }}" class="btn btn-sm btn-success me-1">Activate</a>
                                     {% endif %}
-                                    <a href="{{ url_for('edit_user', user_id=user.id) }}" class="btn btn-sm btn-primary">Edit</a>
+                                    <a href="{{ url_for('edit_user', user_id=user.id) }}" class="btn btn-sm btn-primary me-1">Edit</a>
+                                    <a href="{{ url_for('admin_user_transactions', user_id=user.id) }}" class="btn btn-sm btn-info">Summary Transfer</a>
                                 </td>
                             </tr>
                             {% endfor %}
@@ -90,4 +98,4 @@
         </div>
     </div>
 </div>
-{% endblock %} 
+{% endblock %}

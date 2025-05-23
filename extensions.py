@@ -25,6 +25,6 @@ storage_uri = os.environ.get('REDIS_URL', 'memory://')
 limiter = Limiter(
     key_func=get_remote_address,
     default_limits=["200 per hour"],  # Set global default rate limit
-    storage_uri=storage_uri,
+    storage_uri=storage_uri,  # Uses Redis if REDIS_URL is set, otherwise in-memory
     strategy="fixed-window",  # can be 'fixed-window', 'fixed-window-elastic-expiry', 'moving-window'
 )
